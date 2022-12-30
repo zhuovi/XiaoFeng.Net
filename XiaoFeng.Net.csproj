@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>.netstandard2.0;.netstandard2.1;</TargetFrameworks>
+		<OutputType>Library</OutputType>
+		<Authors>Jacky</Authors>
+		<Product>XiaoFeng网络库,Socket,Email</Product>
+		<Description>XiaoFeng网络库，封装了Socket客户端，服务端，根据当前库可轻松实现订阅，发布等功能。</Description>
+		<Copyright>CopyRight © 2008-2024 魔法精灵(www.fayelf.com) QQ:7092734 Email:jacky@fayelf.com</Copyright>
+		<Company>魔法精灵</Company>
+		<VersionPrefix>2.0</VersionPrefix>
+		<VersionSuffix>0</VersionSuffix>
+		<Version>$(VersionPrefix).$(VersionSuffix)</Version>
+		<FileVersion>$(Version)</FileVersion>
+		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+		<ProductVersion>$(VersionPrefix)</ProductVersion>
+		<Deterministic>false</Deterministic>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+		<SignAssembly>False</SignAssembly>
+		<EnableNETAnalyzers>False</EnableNETAnalyzers>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<RepositoryUrl>https://github.com/zhuovi/XiaoFeng.Net</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
+		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReleaseNotes>打包基础版本</PackageReleaseNotes>
+		<DelaySign>False</DelaySign>
+		<IsPackable>true</IsPackable>
+		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>
+		<Title>XiaoFeng.Net</Title>
+	</PropertyGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\XiaoFeng.Core\XiaoFeng.Core.csproj" />
+	</ItemGroup>
+</Project>
