@@ -31,6 +31,6 @@
 		<Title>XiaoFeng.Net</Title>
 	</PropertyGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\..\XiaoFeng.Core\XiaoFeng.Core.csproj" />
+	  <ProjectReference Include="..\XiaoFeng.Core\XiaoFeng.Core.csproj" />
 	</ItemGroup>
 </Project>

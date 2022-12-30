@@ -27,6 +27,30 @@ QQ群二维码：
 
 XiaoFeng网络库，封装了Socket客户端，服务端，根据当前库可轻松实现订阅，发布等功能。
 
+## XiaoFeng.Net
+
+XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Net).
+
+## Install
+
+.NET CLI
+
+```
+$ dotnet add package XiaoFeng.Net
+```
+
+Package Manager
+
+```
+PM> Install-Package XiaoFeng.Net
+```
+
+PackageReference
+
+```
+<PackageReference Include="XiaoFeng.Net" Version="2.0.0" />
+```
+
 
 # XiaoFeng.Net Socket操作
 
