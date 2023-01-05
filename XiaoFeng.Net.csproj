@@ -4,7 +4,7 @@
 		<OutputType>Library</OutputType>
 		<Authors>Jacky</Authors>
 		<Product>XiaoFeng网络库,Socket,Email</Product>
-		<Description>XiaoFeng网络库，封装了Socket客户端，服务端，根据当前库可轻松实现订阅，发布等功能。</Description>
+		<Description>XiaoFeng网络库，封装了Socket客户端，服务端（Socket,WebSocket），根据当前库可轻松实现订阅，发布等功能。</Description>
 		<Copyright>CopyRight © 2008-2024 魔法精灵(www.fayelf.com) QQ:7092734 Email:jacky@fayelf.com</Copyright>
 		<Company>魔法精灵</Company>
 		<VersionPrefix>2.0</VersionPrefix>
