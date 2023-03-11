@@ -30,40 +30,40 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 2.0.4
+$ dotnet add package XiaoFeng.Net --version 2.0.5
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 2.0.4
+PM> Install-Package XiaoFeng.Net --Version 2.0.5
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="2.0.4" />
+<PackageReference Include="XiaoFeng.Net" Version="2.0.5" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 2.0.4
+> paket add XiaoFeng.Net --version 2.0.5
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 2.0.4"
+> #r "nuget: XiaoFeng.Net, 2.0.5"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=2.0.4
+#addin nuget:?package=XiaoFeng.Net&version=2.0.5
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=2.0.4
+#tool nuget:?package=XiaoFeng.Net&version=2.0.5
 ```
 
 # XiaoFeng.Net Socket操作
