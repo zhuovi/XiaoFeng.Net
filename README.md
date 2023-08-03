@@ -30,41 +30,46 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 2.0.6
+$ dotnet add package XiaoFeng.Net --version 3.0.0
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 2.0.6
+PM> Install-Package XiaoFeng.Net --Version 3.0.0
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="2.0.6" />
+<PackageReference Include="XiaoFeng.Net" Version="3.0.0" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 2.0.6
+> paket add XiaoFeng.Net --version 3.0.0
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 2.0.6"
+> #r "nuget: XiaoFeng.Net, 3.0.0"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=2.0.6
+#addin nuget:?package=XiaoFeng.Net&version=3.0.0
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=2.0.6
+#tool nuget:?package=XiaoFeng.Net&version=3.0.0
 ```
+## 2023-08-03   v 3.0.0
+
+1.重新写Socket库,SocketServer,WebSocketServer,SocketClient,WebSocketClient;
+
+---
 
 # XiaoFeng 类库包含库
 | 命名空间 | 所属类库 | 开源状态 | 说明 | 包含功能 |
