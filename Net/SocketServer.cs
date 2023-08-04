@@ -119,8 +119,12 @@ namespace XiaoFeng.Net
         public SslProtocols SslProtocols { get; set; } = SslProtocols.None;
         ///<inheritdoc/>
         public X509Certificate Certificate { get; set; }
+        /// <summary>
+        /// 激活状态
+        /// </summary>
+        private Boolean _Active = false;
         ///<inheritdoc/>
-        public bool Active { get; set; }
+        public Boolean Active { get => this._Active; }
         /// <summary>
         /// 服务端SOCKET
         /// </summary>
@@ -235,7 +239,7 @@ namespace XiaoFeng.Net
                 Stop();
                 throw ex;
             }
-            this.Active = true;
+            this._Active = true;
         }
         /// <inheritdoc/>
         public virtual void Start()
@@ -250,7 +254,7 @@ namespace XiaoFeng.Net
         {
             if (this.Active)
             {
-                this.Active = false;
+                this._Active = false;
                 this.Dispose(true);
             }
             this.OnStop?.Invoke(this, EventArgs.Empty);

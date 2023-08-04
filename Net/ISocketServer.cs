@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace XiaoFeng.Net
 {
     /// <summary>
-    /// ISocketServer说明
+    /// SocketServer接口
     /// </summary>
     public interface ISocketServer : INetSocket
     {
