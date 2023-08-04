@@ -23,7 +23,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
-		<PackageReleaseNotes>重新写Socket库,SocketServer,WebSocketServer,SocketClient,WebSocketClient;</PackageReleaseNotes>
+		<PackageReleaseNotes>修复网络库添加订阅功能;</PackageReleaseNotes>
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>
