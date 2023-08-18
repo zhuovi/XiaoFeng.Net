@@ -13,6 +13,8 @@ using System.IO;
 using XiaoFeng.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
+using XiaoFeng.Threading;
+using System.Security.Cryptography;
 
 /****************************************************************
 *  Copyright © (2023) www.fayelf.com All Rights Reserved.       *
@@ -53,8 +55,16 @@ namespace XiaoFeng.Net
         /// <param name="port">端口</param>
         public SocketClient(string host, int port)
         {
-            if (host.IsNullOrEmpty()) host = "127.0.0.1";
-            this.EndPoint = new IPEndPoint(IPAddress.Parse(host), port);
+            if (host.IsNullOrEmpty() || host.EqualsIgnoreCase("localhost")) host = "127.0.0.1";
+           
+           foreach(var ip in Dns.GetHostEntry(host).AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    this.EndPoint = new IPEndPoint(ip, port);
+                    break;
+                }
+            }            
             InitializeClientSocket();
         }
         /// <summary>
@@ -80,7 +90,7 @@ namespace XiaoFeng.Net
         ///<inheritdoc/>
         public ProtocolType ProtocolType { get; set; } = ProtocolType.Tcp;
         ///<inheritdoc/>
-        public ConnectionType ConnectionType { get; set; }
+        public ConnectionType ConnectionType { get; set; } = ConnectionType.Socket;
         ///<inheritdoc/>
         public Boolean NoDelay { get; set; } = false;
         ///<inheritdoc/>
@@ -100,7 +110,7 @@ namespace XiaoFeng.Net
         /// </summary>
         private Boolean _Active = false;
         ///<inheritdoc/>
-        public Boolean Active { get; }
+        public Boolean Active { get => this._Active; }
         ///<inheritdoc/>
         public SocketState SocketState { get; set; } = SocketState.Idle;
         ///<inheritdoc/>
@@ -163,6 +173,12 @@ namespace XiaoFeng.Net
         public string RequestHeader => this._RequestHeader;
         ///<inheritdoc/>
         public SocketDataType DataType { get; set; } = SocketDataType.String;
+        ///<inheritdoc/>
+        public Boolean IsPing { get; set; }
+        ///<inheritdoc/>
+        public int PingTime { get; set; } = 120;
+        ///<inheritdoc/>
+        private IJob Job { get; set; }
         /// <summary>
         /// 频道KEY
         /// </summary>
@@ -205,6 +221,8 @@ namespace XiaoFeng.Net
 
         #region 连接
         ///<inheritdoc/>
+        public virtual void Connect() => this.Connect(this.EndPoint);
+        ///<inheritdoc/>
         public virtual void Connect(string hostname, int port)
         {
             if (hostname.IsNullOrEmpty()) hostname = "127.0.0.1";
@@ -237,10 +255,12 @@ namespace XiaoFeng.Net
                                 catch (Exception ex)
                                 {
                                     this.Client = null;
-                                    throw ex;
+                                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                                    return;
                                 }
                             }
                             this._Active = true;
+                            this.SocketState = SocketState.Runing;
                             break;
                         }
                         else if (address.AddressFamily == AddressFamily.Unknown)
@@ -262,9 +282,7 @@ namespace XiaoFeng.Net
                 if (!this.Active)
                 {
                     lastex?.Throw();
-                    throw new SocketException((int)SocketError.NotConnected);
-                }
-                this.SocketState = SocketState.Runing;
+                } 
             }
         }
         ///<inheritdoc/>
@@ -299,34 +317,36 @@ namespace XiaoFeng.Net
             this.SocketState = SocketState.Runing;
         }
         ///<inheritdoc/>
-        public virtual Task ConnectAsync(IPAddress address, int port)
+        public virtual async Task ConnectAsync(IPAddress address, int port)
         {
             if (address == null) address = IPAddress.Parse("127.0.0.1");
             if (port <= 0) port = 1006;
-            return this.CompleteConnectAsync(this.Client.ConnectAsync(address, port));
+            await this.CompleteConnectAsync(this.Client.ConnectAsync(address, port));
         }
         ///<inheritdoc/>
-        public virtual Task ConnectAsync(string host, int port)
+        public virtual async Task ConnectAsync() => await this.ConnectAsync(this.EndPoint);
+        ///<inheritdoc/>
+        public virtual async Task ConnectAsync(string host, int port)
         {
             if (host.IsNullOrEmpty()) host = "127.0.0.1";
             if (port <= 0) port = 1006;
-            return CompleteConnectAsync(this.Client.ConnectAsync(host, port));
+            await CompleteConnectAsync(this.Client.ConnectAsync(host, port));
         }
         ///<inheritdoc/>
-        public virtual Task ConnectAsync(IPAddress[] addresses, int port)
+        public virtual async Task ConnectAsync(IPAddress[] addresses, int port)
         {
             if (addresses == null || addresses.Length == 0) addresses = new IPAddress[] { IPAddress.Parse("127.0.0.1") };
             if (port <= 0) port = 1006;
-            return this.CompleteConnectAsync(this.Client.ConnectAsync(addresses, port));
+            await this.CompleteConnectAsync(this.Client.ConnectAsync(addresses, port));
         }
         ///<inheritdoc/>
-        public virtual Task ConnectAsync(IPEndPoint remoteEP)
+        public virtual async Task ConnectAsync(IPEndPoint remoteEP)
         {
             if (remoteEP == null)
             {
                 remoteEP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1006);
             }
-            return this.CompleteConnectAsync(this.Client.ConnectAsync(remoteEP));
+            await this.CompleteConnectAsync(this.Client.ConnectAsync(remoteEP));
         }
         /// <summary>
         /// 连接完成
@@ -339,6 +359,7 @@ namespace XiaoFeng.Net
             this.EndPoint = this.Client.RemoteEndPoint.ToIPEndPoint();
             this._Active = true;
             this.SocketState = SocketState.Runing;
+            await Task.CompletedTask;
         }
         #endregion
 
@@ -347,8 +368,11 @@ namespace XiaoFeng.Net
         public virtual void Start()
         {
             if (!this.IsServer)
+            {
                 this.Connect(this.EndPoint);
-            this.OnStart?.Invoke(this, EventArgs.Empty);
+                this.PingAsync().ConfigureAwait(false);
+                this.OnStart?.Invoke(this, EventArgs.Empty);
+            }
             Task.Run(() =>
             {
                 this.ReceviceDataAsync().ConfigureAwait(false);
@@ -375,7 +399,7 @@ namespace XiaoFeng.Net
         {
             if (!this.Connected)
             {
-                this.OnClientError?.Invoke(this, new SocketException((int)SocketError.NotConnected));
+                this.OnClientError?.Invoke(this, this.EndPoint, new SocketException((int)SocketError.NotConnected));
                 return null;
             }
             if (this.NetStream == null)
@@ -419,7 +443,8 @@ namespace XiaoFeng.Net
             {
                 var sslStream = new SslStream(stream, false, (sender, cert, chain, error) =>
                 {
-                    return error == SslPolicyErrors.None;
+                    return true;
+                    //return error == SslPolicyErrors.None;
                 });
                 if (IsServer)
                 {
@@ -438,23 +463,23 @@ namespace XiaoFeng.Net
                     }
                     catch (SocketException ex)
                     {
-                        this.OnClientError?.Invoke(this, ex);
+                        this.OnClientError?.Invoke(this, this.EndPoint, ex);
                         return null;
                     }
                     catch (IOException ex)
                     {
                         if (ex.InnerException is SocketException err)
-                            this.OnClientError?.Invoke(this, err);
+                            this.OnClientError?.Invoke(this, this.EndPoint, err);
                         else
-                            this.OnClientError?.Invoke(this, ex);
+                            this.OnClientError?.Invoke(this, this.EndPoint, ex);
                         return null;
                     }
                     catch (Exception ex)
                     {
                         if (ex.InnerException is SocketException err)
-                            this.OnClientError?.Invoke(this, err);
+                            this.OnClientError?.Invoke(this, this.EndPoint, err);
                         else
-                            this.OnClientError?.Invoke(this, ex);
+                            this.OnClientError?.Invoke(this, this.EndPoint, ex);
                         return null;
                     }
                 }
@@ -475,23 +500,23 @@ namespace XiaoFeng.Net
                     }
                     catch (SocketException ex)
                     {
-                        this.OnClientError?.Invoke(this, ex);
+                        this.OnClientError?.Invoke(this, this.EndPoint, ex);
                         return null;
                     }
                     catch (IOException ex)
                     {
                         if (ex.InnerException is SocketException err)
-                            this.OnClientError?.Invoke(this, err);
+                            this.OnClientError?.Invoke(this, this.EndPoint, err);
                         else
-                            this.OnClientError?.Invoke(this, new SocketException((int)SocketError.SocketError));
+                            this.OnClientError?.Invoke(this, this.EndPoint, new SocketException((int)SocketError.SocketError));
                         return null;
                     }
                     catch (Exception ex)
                     {
                         if (ex.InnerException is SocketException err)
-                            this.OnClientError?.Invoke(this, err);
+                            this.OnClientError?.Invoke(this, this.EndPoint, err);
                         else
-                            this.OnClientError?.Invoke(this, new SocketException((int)SocketError.SocketError));
+                            this.OnClientError?.Invoke(this, this.EndPoint, new SocketException((int)SocketError.SocketError));
                     }
                 }
                 if (sslStream.IsAuthenticated)
@@ -510,6 +535,80 @@ namespace XiaoFeng.Net
         #endregion
 
         #region 接收数据
+        ///<inheritdoc/>
+        public virtual async Task<int?> ReceviceByteAsync()
+        {
+            var stream = this.GetSslStream();
+            if (stream == null) return null;
+            try
+            {
+                return await Task.FromResult(stream.ReadByte());
+            }
+            catch (SocketException ex)
+            {
+                this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return null;
+            }
+            catch (IOException ex)
+            {
+                if (ex.InnerException is SocketException err)
+                {
+                    this.OnClientError?.Invoke(this, this.EndPoint, err);
+                    this.OnStop?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException is SocketException err)
+                    this.OnClientError?.Invoke(this, this.EndPoint, err);
+                else
+                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return null;
+            }
+        }
+        ///<inheritdoc/>
+        public virtual async Task<byte[]> ReceviceMessageAsync(byte[] bytes, int offset = -1, int count = -1)
+        {
+            if (bytes == null || bytes.Length == 0 || bytes.Length <= offset || bytes.Length <= count + offset) return Array.Empty<byte>();
+            if (offset < 0) offset = 0;
+            if (count <= 0) count = bytes.Length - offset;
+            var stream = this.GetSslStream();
+            if (stream == null) return Array.Empty<byte>();
+            try
+            {
+                var dataBuffer = new byte[count];
+                var readsize = await stream.ReadAsync(dataBuffer, 0, count, this.CancelToken.Token);
+                Array.Copy(dataBuffer, 0, bytes, offset, readsize);
+            }
+            catch (SocketException ex)
+            {
+                this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return Array.Empty<byte>();
+            }
+            catch (IOException ex)
+            {
+                if (ex.InnerException is SocketException err)
+                {
+                    this.OnClientError?.Invoke(this, this.EndPoint, err);
+                    this.OnStop?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return Array.Empty<byte>();
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException is SocketException err)
+                    this.OnClientError?.Invoke(this, this.EndPoint, err);
+                else
+                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
+                return Array.Empty<byte>();
+            }
+            return bytes;
+        }
         /// <inheritdoc/>
         public virtual async Task<byte[]> ReceviceMessageAsync()
         {
@@ -527,26 +626,26 @@ namespace XiaoFeng.Net
                 }
                 catch (SocketException ex)
                 {
-                    this.OnClientError?.Invoke(this, ex);
+                    this.OnClientError?.Invoke(this, this.EndPoint, ex);
                     break;
                 }
                 catch (IOException ex)
                 {
                     if (ex.InnerException is SocketException err)
                     {
-                        this.OnClientError?.Invoke(this, err);
+                        this.OnClientError?.Invoke(this, this.EndPoint, err);
                         this.OnStop?.Invoke(this, EventArgs.Empty);
                     }
                     else
-                        this.OnClientError?.Invoke(this, ex);
+                        this.OnClientError?.Invoke(this, this.EndPoint, ex);
                     break;
                 }
                 catch (Exception ex)
                 {
                     if (ex.InnerException is SocketException err)
-                        this.OnClientError?.Invoke(this, err);
+                        this.OnClientError?.Invoke(this, this.EndPoint, err);
                     else
-                        this.OnClientError?.Invoke(this, ex);
+                        this.OnClientError?.Invoke(this, this.EndPoint, ex);
                     break;
                 }
             } while (readsize > 0 && this.GetStream().DataAvailable);
@@ -582,6 +681,10 @@ namespace XiaoFeng.Net
                         {
                             this.ConnectionType = ConnectionType.WebSocket;
                             this._RequestHeader = ReceiveMessage;
+                            if(this.IsServer && this is IWebSocketClient webSocket)
+                            {
+                                webSocket.Request = new WebSocketRequest(webSocket.HostName.IsNullOrEmpty() ? "ws" : "wss", this.RequestHeader);
+                            }
                         }
                         else
                         {
@@ -597,6 +700,8 @@ namespace XiaoFeng.Net
                             this.OnAuthentication?.Invoke(this, msg, EventArgs.Empty);
                             break;
                         }
+                        if (this.IsServer)
+                            this.OnStart?.Invoke(this, EventArgs.Empty);
                         if (this.ConnectionType == ConnectionType.WebSocket)
                         {
                             //开始握手
@@ -605,7 +710,9 @@ namespace XiaoFeng.Net
                                 Encoding = this.Encoding,
                                 DataType = this.DataType
                             };
-                            await packet.HandshakeAsync();
+                           var Handshake = packet.HandshakeAsync();
+                            await Handshake;
+                            
                             HandshakesCount++;
                             continue;
                         }
@@ -634,7 +741,7 @@ namespace XiaoFeng.Net
                         if (bytes.Length == 0) continue;
                     }
                 }
-                ReceiveMessage = bytes.GetString(this.Encoding);
+                ReceiveMessage = this.DataType == SocketDataType.String ? bytes.GetString(this.Encoding) : bytes.ByteToHexString();
 
                 if (ReceiveMessage.StartsWith("SUBSCRIBE#", StringComparison.OrdinalIgnoreCase))
                 {
@@ -663,8 +770,8 @@ namespace XiaoFeng.Net
                     }
                 }
 
-                this.OnMessage?.Invoke(this, ReceiveMessage, EventArgs.Empty);
-                this.OnMessageByte?.Invoke(this, bytes, EventArgs.Empty);
+                Task.Run(() => this.OnMessage?.Invoke(this, ReceiveMessage, EventArgs.Empty));
+                Task.Run(() => this.OnMessageByte?.Invoke(this, bytes, EventArgs.Empty));
 
             } while (!this.CancelToken.IsCancellationRequested && this.Connected);
             this.Stop();
@@ -696,13 +803,13 @@ namespace XiaoFeng.Net
         public virtual int Send(string message)
         {
             if (message.IsNullOrEmpty()) return 0;
-            return this.Send(message.GetBytes(this.Encoding));
+            return this.Send(this.DataType == SocketDataType.String ? message.GetBytes(this.Encoding) : message.HexStringToBytes());
         }
         ///<inheritdoc/>
         public virtual async Task<int> SendAsync(string message)
         {
             if (message.IsNullOrEmpty()) return 0;
-            return await this.SendAsync(message.GetBytes(this.Encoding));
+            return await this.SendAsync(this.DataType == SocketDataType.String ? message.GetBytes(this.Encoding) : message.HexStringToBytes());
         }
         ///<inheritdoc/>
         public virtual void SendFile(string fileName)
@@ -729,7 +836,7 @@ namespace XiaoFeng.Net
         {
             if (!this.Connected)
             {
-                this.OnClientError?.Invoke(this, new SocketException((int)SocketError.NotConnected));
+                this.OnClientError?.Invoke(this,this.EndPoint, new SocketException((int)SocketError.NotConnected));
                 return -1;
             }
             if ((opCode == OpCode.Text || opCode == OpCode.Binary) && (buffers == null || buffers.Length == 0)) return 0;
@@ -758,7 +865,7 @@ namespace XiaoFeng.Net
         {
             if (!this.Connected)
             {
-                this.OnClientError?.Invoke(this, new SocketException((int)SocketError.NotConnected));
+                this.OnClientError?.Invoke(this, this.EndPoint, new SocketException((int)SocketError.NotConnected));
                 return -1;
             }
             if ((opCode == OpCode.Text || opCode == OpCode.Binary) && (buffers == null || buffers.Length == 0)) return 0;
@@ -781,7 +888,7 @@ namespace XiaoFeng.Net
         ///<inheritdoc/>
         public void StopEventHandler() => OnStop?.Invoke(this, EventArgs.Empty);
         ///<inheritdoc/>
-        public void ClientErrorEventHandler(Exception e) => OnClientError?.Invoke(this, e);
+        public void ClientErrorEventHandler(IPEndPoint endPoint, Exception e) => OnClientError?.Invoke(this, endPoint, e);
         ///<inheritdoc/>
         public void MessageEventHandler(string message) => OnMessage?.Invoke(this, message, EventArgs.Empty);
         ///<inheritdoc/>
@@ -908,6 +1015,28 @@ namespace XiaoFeng.Net
         public virtual Boolean ContainsData(string key) => key.IsNotNullOrEmpty() && this.TagsData != null && this.TagsData.Count != 0 && this.TagsData.ContainsKey(key);
         #endregion
 
+        #region 运行ping作业
+        /// <summary>
+        /// 启动ping作业
+        /// </summary>
+        /// <returns></returns>
+        public Task PingAsync()
+        {
+            if (!this.IsPing || this.IsServer) return Task.CompletedTask;
+            if (this.PingTime <= 3) this.PingTime = 10;
+            this.Job = new Job().SetName("SocketClient自动Ping作业").Interval(this.PingTime * 1000).SetCompleteCallBack(job =>
+            {
+                this.SendPingAsync(new
+                {
+                    type = "ping",
+                    time = DateTime.Now.ToTimeStamp()
+                }.ToJson().GetBytes(this.Encoding)).ConfigureAwait(false);
+            });
+            this.Job.Start();
+            return Task.CompletedTask;
+        }
+        #endregion
+
         #region 释放
         /// <summary>
         /// 释放
@@ -926,8 +1055,11 @@ namespace XiaoFeng.Net
                 this.CancelToken.Cancel(true);
             if (this.Client != null)
             {
-                this.Client.Shutdown(SocketShutdown.Both);
-                this.Client.Close(3);
+                if (this.Client.Connected)
+                {
+                    this.Client.Shutdown(SocketShutdown.Both);
+                    this.Client.Close(3);
+                }
                 this.Client.Dispose();
                 this.Client = null;
             }
@@ -939,6 +1071,11 @@ namespace XiaoFeng.Net
             this.SslStream = null;
             this._Active = false;
             this.CancelToken = new CancellationTokenSource();
+            if (this.Job != null)
+            {
+                this.Job.Stop();
+                this.Job = null;
+            }
             base.Dispose(disposing);
         }
         /// <summary>

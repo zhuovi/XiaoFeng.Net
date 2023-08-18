@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Concurrent;
 using System.Linq;
+using XiaoFeng.Threading;
 
 /****************************************************************
 *  Copyright © (2023) www.fayelf.com All Rights Reserved.       *
@@ -157,15 +158,31 @@ namespace XiaoFeng.Net
             }
         }
         /// <summary>
-        /// 允许网络地址转换
+        /// 允许网络地址转换Thank you very much. You are a wonderful person. Do you have whatsapp or telegram? Or are you using your mail actively?
         /// </summary>
         private Boolean? _AllowNatTraversal;
         ///<inheritdoc/>
         public SocketState SocketState { get; set; } = SocketState.Idle;
         /// <summary>
+        /// 客户端列表
+        /// </summary>
+        public ICollection<ISocketClient> Clients => this._Clients?.Values ?? null;
+        /// <summary>
         /// 连接列表
         /// </summary>
-        public ConcurrentDictionary<IPEndPoint, ISocketClient> Clients { get; private set; } = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
+        private ConcurrentDictionary<IPEndPoint, ISocketClient> _Clients { get; set; } = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
+        /// <summary>
+        /// 是否自动Pong
+        /// </summary>
+        public Boolean IsPong { get; set; }
+        /// <summary>
+        /// pong间隔 单位为秒
+        /// </summary>
+        public int PongTime { get; set; } = 120;
+        /// <summary>
+        /// 定时作业
+        /// </summary>
+        private IJob Job { get; set; }
         /// <summary>
         /// 主任务
         /// </summary>
@@ -233,6 +250,7 @@ namespace XiaoFeng.Net
                 /*启动事件*/
                 OnStart?.Invoke(this, EventArgs.Empty);
                 this.AcceptSocketClient();
+                this.RunPongAsync().ConfigureAwait(false);
             }
             catch (SocketException ex)
             {
@@ -268,9 +286,9 @@ namespace XiaoFeng.Net
         public virtual void Send(byte[] buffers)
         {
             if (buffers == null || buffers.Length == 0) return;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
             if (this.Clients.Count == 0) return;
-            this.Clients.Values.Each(a => a.Send(buffers));
+            this.Clients.Each(a => a.Send(buffers));
         }
         ///<inheritdoc/>
         public virtual void Send(byte[] buffers, ISocketClient client)
@@ -288,20 +306,25 @@ namespace XiaoFeng.Net
             this.Send(buffer, client);
         }
         ///<inheritdoc/>
-        public virtual void Send(byte[] buffers, string channel)
+        public virtual void Send(byte[] buffers, params string[] channel)
         {
             if (buffers == null || buffers.Length == 0) return;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
             if (this.Clients.Count == 0) return;
-            this.Clients.Values.Where(a => a.ContainsChannel(channel)).Each(c => c.Send(buffers));
+            if (channel.IsNullOrEmpty())
+            {
+                this.Send(buffers);
+                return;
+            }
+            this.Clients.Where(a => a.ContainsChannel(channel)).Each(c => c.Send(buffers));
         }
         ///<inheritdoc/>
         public virtual void Send(byte[] buffers, string key, object value)
         {
             if (buffers == null || buffers.Length == 0) return;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return; }
             if (this.Clients.Count == 0) return;
-            this.Clients.Values.Where(a => a.GetData(key) == value).Each(c => c.Send(buffers));
+            this.Clients.Where(a => a.GetData(key) == value).Each(c => c.Send(buffers));
         }
         ///<inheritdoc/>
         public virtual async Task SendAsync(string message) => await this.SendAsync(message.GetBytes(this.Encoding));
@@ -309,9 +332,9 @@ namespace XiaoFeng.Net
         public virtual Task SendAsync(byte[] buffers)
         {
             if (buffers == null || buffers.Length == 0) return Task.CompletedTask;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
             if (this.Clients.Count == 0) return Task.CompletedTask;
-            this.Clients.Values.Each(async a => await a.SendAsync(buffers).ConfigureAwait(false));
+            this.Clients.Each(async a => await a.SendAsync(buffers).ConfigureAwait(false));
             return Task.CompletedTask;
         }
         ///<inheritdoc/>
@@ -331,21 +354,21 @@ namespace XiaoFeng.Net
             await this.SendAsync(buffer, client);
         }
         ///<inheritdoc/>
-        public virtual Task SendAsync(byte[] buffers, string channel)
+        public virtual Task SendAsync(byte[] buffers, params string[] channel)
         {
             if (buffers == null || buffers.Length == 0) return Task.CompletedTask;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
             if (this.Clients.Count == 0) return Task.CompletedTask;
-            this.Clients.Values.Where(a => a.ContainsChannel(channel)).Each(async c => await c.SendAsync(buffers));
+            this.Clients.Where(a => a.ContainsChannel(channel)).Each(async c => await c.SendAsync(buffers));
             return Task.CompletedTask;
         }
         ///<inheritdoc/>
         public virtual Task SendAsync(byte[] buffers, string key, object value)
         {
             if (buffers == null || buffers.Length == 0) return Task.CompletedTask;
-            if (this.Clients == null) { this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
+            if (this.Clients == null) { this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>(); return Task.CompletedTask; }
             if (this.Clients.Count == 0) return Task.CompletedTask;
-            this.Clients.Values.Where(a => a.GetData(key) == value).Each(async c => await c.SendAsync(buffers));
+            this.Clients.Where(a => a.GetData(key) == value).Each(async c => await c.SendAsync(buffers));
             return Task.CompletedTask;
         }
         #endregion
@@ -385,44 +408,45 @@ namespace XiaoFeng.Net
                         this.OnError?.Invoke(this, new Exception("客户端转换实体出错."));
                         continue;
                     }
-                    //判断黑名单
-                    if (this.ContainsBlack(client.EndPoint.Address.ToString()))
+
+                    new Task(o =>
                     {
-                        var msg = "当前客户端IP在黑名单中,禁止连接服务器.";
-                        client.Send(msg);
-                        client.Stop();
-                        this.OnAuthentication?.Invoke(client, msg, EventArgs.Empty);
-                        continue;
-                    }
-                    Task.Run(() =>
-                    {
+                        var clientSocket = (T)o;
+                        //判断黑名单
+                        if (this.ContainsBlack(clientSocket.EndPoint.Address.ToString()))
+                        {
+                            var msg = "当前客户端IP在黑名单中,禁止连接服务器.";
+                            clientSocket.Send(msg);
+                            clientSocket.Stop();
+                            this.OnAuthentication?.Invoke(clientSocket, msg, EventArgs.Empty);
+                            return;
+                        }
                         if (this.ReceiveBufferSize >= 0)
-                            client.ReceiveBufferSize = this.ReceiveBufferSize;
-                        if (this.ReceiveTimeout >= 0) client.ReceiveTimeout = this.ReceiveTimeout;
-                        if (this.SendTimeout >= 0) client.SendTimeout = this.SendTimeout;
+                            clientSocket.ReceiveBufferSize = this.ReceiveBufferSize;
+                        if (this.ReceiveTimeout >= 0) clientSocket.ReceiveTimeout = this.ReceiveTimeout;
+                        if (this.SendTimeout >= 0) clientSocket.SendTimeout = this.SendTimeout;
                         if (this.SslProtocols >= 0)
-                            client.SslProtocols = this.SslProtocols;
-                        client.Encoding = this.Encoding;
-                        client.DataType = this.DataType;
-                        client.CancelToken = this.CancelToken;
-                        client.OnClientError += this.OnClientError;
-                        client.OnMessage += this.OnMessage;
-                        client.OnMessageByte += this.OnMessageByte;
-                        client.OnAuthentication += this.OnAuthentication;
-                        client.OnStart += (c, e) =>
+                            clientSocket.SslProtocols = this.SslProtocols;
+                        clientSocket.Encoding = this.Encoding;
+                        clientSocket.DataType = this.DataType;
+                        clientSocket.CancelToken = this.CancelToken;
+                        clientSocket.OnClientError += this.OnClientError;
+                        clientSocket.OnMessage += this.OnMessage;
+                        clientSocket.OnMessageByte += this.OnMessageByte;
+                        clientSocket.OnAuthentication += this.OnAuthentication;
+                        clientSocket.OnStart += (c, e) =>
                         {
                             //加入队列
-                            this.AddQueue(client);
-                            this.OnNewConnection?.Invoke(client, e);
+                            this.AddQueue(clientSocket);
+                            this.OnNewConnection?.Invoke(clientSocket, e);
                         };
-                        client.OnStop += (c, e) =>
+                        clientSocket.OnStop += (c, e) =>
                         {
                             //移除队列
-                            this.RemoveQueue(client);
+                            this.RemoveQueue(clientSocket);
                         };
-                        client.Start();
-                        
-                    });
+                        clientSocket.Start();
+                    }, client, this.CancelToken.Token, TaskCreationOptions.LongRunning).Start();
                 }
             }, this.CancelToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
         }
@@ -564,7 +588,7 @@ namespace XiaoFeng.Net
         ///<inheritdoc/>
         public void DisconnectedEventHandler(ISocketClient client) => OnDisconnected?.Invoke(client, EventArgs.Empty);
         ///<inheritdoc/>
-        public void ClientErrorEventHandler(ISocketClient client,Exception e) => OnClientError?.Invoke(client, e);
+        public void ClientErrorEventHandler(ISocketClient client, IPEndPoint endPoint, Exception e) => OnClientError?.Invoke(client, endPoint, e);
         ///<inheritdoc/>
         public void MessageEventHandler(ISocketClient client, string message) => OnMessage?.Invoke(client, message, EventArgs.Empty);
         ///<inheritdoc/>
@@ -581,18 +605,8 @@ namespace XiaoFeng.Net
         private void AddQueue(ISocketClient client)
         {
             if (client == null || client.SocketState != SocketState.Runing || !client.Connected) return;
-            if (this.Clients == null) this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
-            this.Clients.TryAdd(client.EndPoint, client);
-            //string Message = session.ReceivedDataBuffer.GetString(this.Encoding);
-            //if (!Message.Contains("Sec-WebSocket-Key"))
-            {
-                //session.SocketType = SocketTypes.Socket;
-                /*连接成功*/
-                //OnNewConnection?.Invoke(session, EventArgs.Empty);
-            }
-            //else
-            //session.SocketType = SocketTypes.WebSocket;
-            //OnNewConnection?.Invoke(session, EventArgs.Empty);
+            if (this.Clients == null) this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
+            this._Clients.TryAdd(client.EndPoint, client);
         }
         /// <summary>
         /// 移除队列
@@ -604,12 +618,10 @@ namespace XiaoFeng.Net
             OnDisconnected?.Invoke(client, EventArgs.Empty);
             try
             {
-                lock (this.Clients)
+                lock (this._Clients)
                 {
-                    this.Clients.TryRemove(client.EndPoint, out client);
+                    this._Clients.TryRemove(client.EndPoint, out client);
                 }
-                //if (client != null && client.Connected)
-                //    client.Stop();
             }
             catch (Exception ex)
             {
@@ -630,9 +642,9 @@ namespace XiaoFeng.Net
             try
             {
                 ISocketClient client;
-                lock (this.Clients)
+                lock (this._Clients)
                 {
-                    this.Clients.TryRemove(endPoint, out client);
+                    this._Clients.TryRemove(endPoint, out client);
                 }
                 if (client.Connected)
                 {
@@ -657,13 +669,13 @@ namespace XiaoFeng.Net
             if (this.Clients != null && this.Clients.Count > 0)
             {
                 //先断开所有连接
-                this.Clients.Values.ToArray().Each(a =>
+                this.Clients.Each(a =>
                 {
                     a.Stop();
                     OnDisconnected?.Invoke(a, EventArgs.Empty);
                 });
-                this.Clients.Clear();
-                this.Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
+                this._Clients.Clear();
+                this._Clients = new ConcurrentDictionary<IPEndPoint, ISocketClient>();
             }
         }
         /// <summary>
@@ -676,8 +688,8 @@ namespace XiaoFeng.Net
             if (socket == null) return null;
             ISocketClient _val = null;
             var point = socket.RemoteEndPoint.ToIPEndPoint();
-            if (this.Clients != null && this.Clients.Count > 0 && this.Clients.ContainsKey(point))
-                this.Clients.TryGetValue(point, out _val);
+            if (this.Clients != null && this.Clients.Count > 0 && this._Clients.ContainsKey(point))
+                this._Clients.TryGetValue(point, out _val);
             return _val;
         }
         /// <summary>
@@ -688,7 +700,7 @@ namespace XiaoFeng.Net
         private ISocketClient GetQueue(Func<ISocketClient, bool> func)
         {
             if (this.Clients == null || this.Clients.Count == 0 || func == null) return null;
-            return this.Clients.Values.Where(func).FirstOrDefault();
+            return this.Clients.Where(func).FirstOrDefault();
         }
         /// <summary>
         /// 获取队列数
@@ -762,6 +774,32 @@ namespace XiaoFeng.Net
         }
         #endregion
 
+        #region 启动pong功能
+        /// <summary>
+        /// 启动pong功能
+        /// </summary>
+        /// <returns></returns>
+        private Task RunPongAsync()
+        {
+            if (!this.IsPong) return Task.CompletedTask;
+            if (this.PongTime <= 3) this.PongTime = 10;
+            //if (this.Clients == null || !this.Clients.Any()) return Task.CompletedTask;
+            this.Job = new Job().SetName("SocketServer自动Pong作业").Interval(this.PongTime * 1000).SetCompleteCallBack(job =>
+            {
+                this.Clients.Each(a =>
+                {
+                    a.SendPongAsync(new
+                    {
+                        type = "pong",
+                        time = DateTime.Now.ToTimeStamp()
+                    }.ToJson().GetBytes(a.Encoding)).ConfigureAwait(false);
+                });
+            });
+            this.Job.Start();
+            return Task.CompletedTask;
+        }
+        #endregion
+
         #region 释放
         /// <summary>
         /// 释放
@@ -777,6 +815,8 @@ namespace XiaoFeng.Net
         protected override void Dispose(bool disposing)
         {
             this.CancelToken.Cancel();
+            this.CancelToken = new CancellationTokenSource();
+            this.ClearQueue();
             if (this.Server.Connected)
             {
                 this.Server.Shutdown(SocketShutdown.Both);
@@ -786,8 +826,11 @@ namespace XiaoFeng.Net
             this.Server.Dispose();
             this.Server = null;
             this.SocketState = SocketState.Stop;
-            this.CancelToken = new CancellationTokenSource();
-            this.ClearQueue();
+            if (this.Job != null)
+            {
+                this.Job.Stop();
+                this.Job = null;
+            }
             base.Dispose(disposing);
         }
         /// <summary>

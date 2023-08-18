@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 namespace XiaoFeng.Net
 {
     /// <summary>
-    /// ISocketClient 类说明
+    /// Socket客户端接口
     /// </summary>
     public interface ISocketClient : INetSocket
     {
@@ -62,11 +62,23 @@ namespace XiaoFeng.Net
         /// 请求头
         /// </summary>
         string RequestHeader { get; }
+        /// <summary>
+        /// 是否自动ping
+        /// </summary>
+        Boolean IsPing { get; set; }
+        /// <summary>
+        /// 每次ping的时间 单位为秒
+        /// </summary>
+        int PingTime { get; set; }
         #endregion
 
         #region 方法
 
         #region 连接
+        /// <summary>
+        /// 将客户端连接到指定主机上的指定端口。
+        /// </summary>
+        void Connect();
         /// <summary>
         /// 将客户端连接到指定主机上的指定端口。
         /// </summary>
@@ -90,6 +102,10 @@ namespace XiaoFeng.Net
         /// <param name="ipAddresses">主机</param>
         /// <param name="port">端口</param>
         void Connect(IPAddress[] ipAddresses, int port);
+        /// <summary>
+        /// 将客户端连接到指定主机上的指定端口。
+        /// </summary>
+        Task ConnectAsync();
         /// <summary>
         /// 将客户端连接到指定主机上的指定端口
         /// </summary>
@@ -181,6 +197,19 @@ namespace XiaoFeng.Net
 
         #region 接收数据
         /// <summary>
+        /// 接收一个字节
+        /// </summary>
+        /// <returns>一个字节</returns>
+        Task<int?> ReceviceByteAsync();
+        /// <summary>
+        /// 接收消息数据到指定数组
+        /// </summary>
+        /// <param name="bytes">数组</param>
+        /// <param name="offset">开始位置</param>
+        /// <param name="count">长度</param>
+        /// <returns>接收到的数据</returns>
+        Task<byte[]> ReceviceMessageAsync(byte[] bytes, int offset = -1, int count = -1);
+        /// <summary>
         /// 接收一条数据
         /// </summary>
         /// <returns>接收数据</returns>
@@ -230,7 +259,7 @@ namespace XiaoFeng.Net
         /// </summary>
         /// <param name="channel">频道</param>
         /// <returns>是否订阅过频道 true订阅过 false 未订阅</returns>
-        Boolean ContainsChannel(string channel);
+        Boolean ContainsChannel(params string[] channel);
         #endregion
 
         #region 设置Socket
@@ -278,7 +307,7 @@ namespace XiaoFeng.Net
         /// 客户端事件回调
         /// </summary>
         /// <param name="e">错误信息</param>
-        void ClientErrorEventHandler(Exception e);
+        void ClientErrorEventHandler(IPEndPoint endPoint, Exception e);
         /// <summary>
         /// 接收消息事件回调
         /// </summary>

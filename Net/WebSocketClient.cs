@@ -27,10 +27,7 @@ namespace XiaoFeng.Net
         /// <summary>
         /// 无参构造器
         /// </summary>
-        public WebSocketClient()
-        {
-            base.ConnectionType = ConnectionType.WebSocket;
-        }
+        public WebSocketClient() { }
         /// <summary>
         /// 设置连接地址
         /// </summary>
@@ -40,21 +37,40 @@ namespace XiaoFeng.Net
         /// 设置连接地址
         /// </summary>
         /// <param name="uri">连接地址</param>
-        public WebSocketClient(Uri uri) : this()
+        public WebSocketClient(Uri uri) 
         {
             this.Uri = uri;
+            base.ConnectionType = ConnectionType.WebSocket;
+            this.WebSocketRequestOptions = new WebSocketRequestOptions
+            {
+                Uri = uri
+            };
         }
         #endregion
 
         #region 属性
         ///<inheritdoc/>
-        public Uri Uri { get; set; }
+        public Uri Uri { get; }
         ///<inheritdoc/>
-        public Boolean IsPing { get; set; }
+        public WebSocketRequestOptions WebSocketRequestOptions { get; private set; }
+        /// <summary>
+        /// 请求数据
+        /// </summary>
+        private WebSocketRequest _Request;
         ///<inheritdoc/>
-        public int PingTime { get; set; } = 120;
-        ///<inheritdoc/>
-        private IJob Job { get; set; }
+        public WebSocketRequest Request
+        {
+            get
+            {
+                if (!this.IsServer) return null;
+                if (this._Request == null)
+                {
+                    this._Request = new WebSocketRequest(this.HostName.IsNullOrEmpty() ? "ws" : "wss", this.RequestHeader);
+                }
+                return this._Request;
+            }
+            set => this._Request = value;
+        }
         #endregion
 
         #region 方法
@@ -83,28 +99,24 @@ namespace XiaoFeng.Net
             var stream = base.GetSslStream();
             if (stream == null)
             {
-                ClientErrorEventHandler(new Exception(stream is NetworkStream ? "请求网络流失败." : "注册SSL失败."));
+                ClientErrorEventHandler(this.EndPoint, new Exception(stream is NetworkStream ? "请求网络流失败." : "注册SSL失败."));
                 base.Stop();
                 return;
             }
-            var packet = new WebSocketPacket(this)
-            {
-                Host = this.Uri.Host + ":" + this.Uri.Port,
-                Origin = this.Uri.Scheme.ReplacePattern(@"^ws", "http") + "://" + this.Uri.Host + ":" + this.Uri.Port,
-                SecWebSocketKey = RandomHelper.GetRandomString(16).ToBase64String(),
-                RequestUri = this.Uri.PathAndQuery
-            };
+            this.WebSocketRequestOptions.SecWebSocketKey = RandomHelper.GetRandomString(16).ToBase64String();
+            if (this.WebSocketRequestOptions.Origin.IsNullOrEmpty()) this.WebSocketRequestOptions.Origin = $"{this.Uri.Scheme.ReplacePattern(@"^ws", "http")}://{this.Uri.Host}:{this.Uri.Port}";
+            var packet = new WebSocketPacket(this, this.WebSocketRequestOptions);
             var data = packet.GetRequestData();
             var bytes = data.GetBytes(this.Encoding);
             stream.Write(bytes, 0, bytes.Length);
             stream.Flush();
             bytes = base.ReceviceMessageAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             var msg = bytes.GetString(this.Encoding);
-            var AcceptCode = packet.ComputeWebSocketHandshakeSecurityHash09(packet.SecWebSocketKey);
+            var AcceptCode = packet.ComputeWebSocketHandshakeSecurityHash09(this.WebSocketRequestOptions.SecWebSocketKey);
             packet = new WebSocketPacket(this, msg);
             if (packet.SecWebSocketAccept.IsNullOrEmpty() || packet.SecWebSocketAccept != AcceptCode)
             {
-                ClientErrorEventHandler(new Exception("握手失败."));
+                ClientErrorEventHandler(this.EndPoint, new Exception("握手失败."));
                 base.Stop();
             }
             base.StartEventHandler();
@@ -113,23 +125,12 @@ namespace XiaoFeng.Net
                 this.ReceviceDataAsync().ConfigureAwait(false);
             }, this.CancelToken.Token);
             if (!this.IsPing) return;
-            Job = new Job()
-            {
-                Name = "WebSocketServer定时ping",
-                TimerType = TimerType.Interval,
-                Period = this.PingTime * 1000,
-                SuccessCallBack = async job =>
-                {
-                    await this.SendPingAsync().ConfigureAwait(false);
-                }
-            };
-            Job.Start();
         }
-        /// <inheritdoc/>
-        public override void Stop()
+        ///<inheritdoc/>
+        public void Start(WebSocketRequestOptions options)
         {
-            if (this.IsPing) this.Job.Stop();
-            base.Stop();
+            this.WebSocketRequestOptions = options;
+            this.Start();
         }
         #endregion
     }
