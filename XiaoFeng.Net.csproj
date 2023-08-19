@@ -23,7 +23,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
-		<PackageReleaseNotes>增加WebSocketClient中属性WebSocketRequest为客户端请求信息;WebSocketClient增加启动传参数据WebSocketRequestOptions;</PackageReleaseNotes>
+		<PackageReleaseNotes>增加WebSocketClient中属性WebSocketRequest为客户端请求信息;WebSocketClient增加启动传参数据WebSocketRequestOptions;优化Socket网络库注释;</PackageReleaseNotes>
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>
