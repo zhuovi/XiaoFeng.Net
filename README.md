@@ -30,41 +30,54 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.0.0
+$ dotnet add package XiaoFeng.Net --version 3.1.0
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.0.0
+PM> Install-Package XiaoFeng.Net --Version 3.1.0
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.0.0" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.0" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.0.0
+> paket add XiaoFeng.Net --version 3.1.0
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.0.0"
+> #r "nuget: XiaoFeng.Net, 3.1.0"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.0.0
+#addin nuget:?package=XiaoFeng.Net&version=3.1.0
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.0.0
+#tool nuget:?package=XiaoFeng.Net&version=3.1.0
 ```
+# 更新日志
+
+## 2023-08-22   v 3.1.0
+
+1.增加WebSocketClient中属性WebSocketRequest为客户端请求信息;
+
+2.WebSocketClient增加启动传参数据WebSocketRequestOptions;
+
+3.优化Socket网络库注释;
+
+4.修复SocketServer每次收到消息都发送一次新连接回调的bug;
+
+
 ## 2023-08-03   v 3.0.0
 
 1.重新写Socket库,SocketServer,WebSocketServer,SocketClient,WebSocketClient;
