@@ -56,7 +56,7 @@ namespace XiaoFeng.Net
     /// <summary>
     /// Socket服务端
     /// </summary>
-    public class SocketServer<T> :Disposable, ISocketServer where T : ISocketClient, new()
+    public class SocketServer<T> : Disposable, ISocketServer where T : ISocketClient, new()
     {
         #region 构造器
         /// <summary>
@@ -101,6 +101,8 @@ namespace XiaoFeng.Net
         ///<inheritdoc/>
         public int SendTimeout { get; set; } = -1;
         ///<inheritdoc/>
+        public int ConnectTimeout { get; set; } = -1;
+        ///<inheritdoc/>
         public int ReceiveBufferSize { get; set; } = 8192;
         ///<inheritdoc/>
         public int SendBufferSize { get; set; } = 8192;
@@ -108,6 +110,8 @@ namespace XiaoFeng.Net
         public int ListenCount { get; set; } = int.MaxValue;
         ///<inheritdoc/>
         public Encoding Encoding { get; set; } = Encoding.UTF8;
+        ///<inheritdoc/>
+        public Boolean ReuseAddress { get; set; } = true;
         ///<inheritdoc/>
         public CancellationTokenSource CancelToken { get; set; } = new CancellationTokenSource();
         ///<inheritdoc/>
@@ -240,9 +244,17 @@ namespace XiaoFeng.Net
         public virtual void Start(int backlog)
         {
             CreateNewSocketIfNeeded();
-            this.Server?.Bind(this.EndPoint);
             try
             {
+                if (this.EndPoint.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    this.Server?.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, false);
+                    this.Server?.Bind(new IPEndPoint(IPAddress.IPv6Any, this.EndPoint.Port));
+                }
+                else
+                {
+                    this.Server?.Bind(this.EndPoint);
+                }
                 this.Server?.Listen(backlog);
                 this.ListenCount = backlog;
                 /*设定服务器运行状态*/
@@ -255,7 +267,7 @@ namespace XiaoFeng.Net
             catch (SocketException ex)
             {
                 Stop();
-                throw ex;
+                this.OnError?.Invoke(this, ex);
             }
             this._Active = true;
         }
@@ -403,52 +415,62 @@ namespace XiaoFeng.Net
                         break;
                     }
                     var client = this.AcceptTcpClientAsync(this.CancelToken.Token).ConfigureAwait(false).GetAwaiter().GetResult();
-                    if(client == null)
-                    {
-                        this.OnError?.Invoke(this, new Exception("客户端转换实体出错."));
-                        continue;
-                    }
-
-                    new Task(o =>
-                    {
-                        var clientSocket = (T)o;
-                        //判断黑名单
-                        if (this.ContainsBlack(clientSocket.EndPoint.Address.ToString()))
-                        {
-                            var msg = "当前客户端IP在黑名单中,禁止连接服务器.";
-                            clientSocket.Send(msg);
-                            clientSocket.Stop();
-                            this.OnAuthentication?.Invoke(clientSocket, msg, EventArgs.Empty);
-                            return;
-                        }
-                        if (this.ReceiveBufferSize >= 0)
-                            clientSocket.ReceiveBufferSize = this.ReceiveBufferSize;
-                        if (this.ReceiveTimeout >= 0) clientSocket.ReceiveTimeout = this.ReceiveTimeout;
-                        if (this.SendTimeout >= 0) clientSocket.SendTimeout = this.SendTimeout;
-                        if (this.SslProtocols >= 0)
-                            clientSocket.SslProtocols = this.SslProtocols;
-                        clientSocket.Encoding = this.Encoding;
-                        clientSocket.DataType = this.DataType;
-                        clientSocket.CancelToken = this.CancelToken;
-                        clientSocket.OnClientError += this.OnClientError;
-                        clientSocket.OnMessage += this.OnMessage;
-                        clientSocket.OnMessageByte += this.OnMessageByte;
-                        clientSocket.OnAuthentication += this.OnAuthentication;
-                        clientSocket.OnStart += (c, e) =>
-                        {
-                            //加入队列
-                            this.AddQueue(clientSocket);
-                            this.OnNewConnection?.Invoke(clientSocket, e);
-                        };
-                        clientSocket.OnStop += (c, e) =>
-                        {
-                            //移除队列
-                            this.RemoveQueue(clientSocket);
-                        };
-                        clientSocket.Start();
-                    }, client, this.CancelToken.Token, TaskCreationOptions.LongRunning).Start();
+                    this.CreateClientAsync(client).ConfigureAwait(false);
                 }
             }, this.CancelToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+        }
+        #endregion
+
+        #region 创建网络客户端
+        /// <summary>
+        /// 创建网络客户端
+        /// </summary>
+        /// <param name="client">网络客户端 <see cref="ISocketClient"/></param>
+        /// <returns>任务</returns>
+        private async Task CreateClientAsync(T client)
+        {
+            if (client == null)
+            {
+                this.OnError?.Invoke(this, new Exception("客户端转换实体出错."));
+                await Task.CompletedTask;
+                return;
+            }
+            //判断黑名单
+            if (this.ContainsBlack(client.EndPoint.Address.ToString()))
+            {
+                var msg = "当前客户端IP在黑名单中,禁止连接服务器.";
+                client.Send(msg);
+                client.Stop();
+                this.OnAuthentication?.Invoke(client, msg, EventArgs.Empty);
+                await Task.CompletedTask;
+                return;
+            }
+            if (this.ReceiveBufferSize >= 0)
+                client.ReceiveBufferSize = this.ReceiveBufferSize;
+            if (this.ReceiveTimeout >= 0) client.ReceiveTimeout = this.ReceiveTimeout;
+            if (this.SendTimeout >= 0) client.SendTimeout = this.SendTimeout;
+            if (this.SslProtocols >= 0)
+                client.SslProtocols = this.SslProtocols;
+            client.Encoding = this.Encoding;
+            client.DataType = this.DataType;
+            client.CancelToken = this.CancelToken;
+            client.OnClientError += this.OnClientError;
+            client.OnMessage += this.OnMessage;
+            client.OnMessageByte += this.OnMessageByte;
+            client.OnAuthentication += this.OnAuthentication;
+            client.OnStart += (c, e) =>
+            {
+                //加入队列
+                this.AddQueue(client);
+                this.OnNewConnection?.Invoke(client, e);
+            };
+            client.OnStop += (c, e) =>
+            {
+                //移除队列
+                this.RemoveQueue(client);
+            };
+            client.Start();
+            await Task.CompletedTask;
         }
         #endregion
 
@@ -456,7 +478,10 @@ namespace XiaoFeng.Net
         /// <summary>
         /// 确定是否存在挂起的连接请求。
         /// </summary>
-        /// <returns></returns>
+        /// <returns>是否存在
+        /// <para><term>true</term> 存在</para>
+        /// <para><term>false</term> 不存在</para>
+        /// </returns>
         public virtual Boolean Pending()
         {
             return this.Active ? this.Server.Poll(0, SelectMode.SelectRead) : false;
@@ -467,7 +492,7 @@ namespace XiaoFeng.Net
         /// <summary>
         /// 接受第一个挂起的连接
         /// </summary>
-        /// <returns></returns>
+        /// <returns>一个 <see cref="Socket"/> 对象</returns>
         public virtual Socket AcceptSocket()
         {
             return this.Server?.Accept();
@@ -476,7 +501,7 @@ namespace XiaoFeng.Net
         /// 接受第一个挂起的连接
         /// </summary>
         /// <param name="cancellationToken">取消指令</param>
-        /// <returns></returns>
+        /// <returns>一个 <see cref="Socket"/> <see cref="Task"/></returns>
         public virtual async Task<Socket> AcceptSocketAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -525,9 +550,9 @@ namespace XiaoFeng.Net
 
         #region 允许网络地址转换
         /// <summary>
-        /// 允许网络地址转换 仅支持windows
+        /// 允许网络地址转换 仅支持 <see langword="windows"/>
         /// </summary>
-        /// <param name="allowed">true允许  false 不允许</param>
+        /// <param name="allowed"><para><term>true</term> 允许 </para><para><term>false</term> 不允许</para></param>
         public void AllowNatTraversal(bool allowed)
         {
             if (this.Active)
@@ -562,14 +587,15 @@ namespace XiaoFeng.Net
                     ReceiveBufferSize = this.ReceiveBufferSize,
                     SendBufferSize = this.SendBufferSize
                 };
-                this.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                if (this.ReuseAddress)
+                    this.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             }
 
             if (this.ExclusiveAddressUse)
             {
                 this.Server.ExclusiveAddressUse = true;
             }
-
+            
             if (OS.Platform.GetOSPlatform() == PlatformOS.Windows && this._AllowNatTraversal != null)
             {
                 this.AllowNatTraversal(this._AllowNatTraversal.GetValueOrDefault());
@@ -836,7 +862,8 @@ namespace XiaoFeng.Net
         /// <summary>
         /// 析构器
         /// </summary>
-        ~SocketServer(){
+        ~SocketServer()
+        {
             this.Dispose(false);
         }
         #endregion

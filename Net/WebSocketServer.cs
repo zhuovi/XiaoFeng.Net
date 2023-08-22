@@ -81,16 +81,13 @@ namespace XiaoFeng.Net
             {
                 if (c.RequestHeader.IndexOf("Sec-WebSocket-Key", StringComparison.OrdinalIgnoreCase) > -1)
                 {
-                    return auth(c);
+                    if (auth == null)
+                        return true;
+                    else auth(c);
                 }
-                return false;
+                return true;
             };
             base.Start(backlog);
-        }
-        /// <inheritdoc/>
-        public override void Stop()
-        {
-            base.Stop();
         }
         #endregion
     }
