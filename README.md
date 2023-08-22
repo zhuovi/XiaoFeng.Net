@@ -30,42 +30,46 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.1.0
+$ dotnet add package XiaoFeng.Net --version 3.1.1
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.1.0
+PM> Install-Package XiaoFeng.Net --Version 3.1.1
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.1.0" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.1" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.1.0
+> paket add XiaoFeng.Net --version 3.1.1
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.1.0"
+> #r "nuget: XiaoFeng.Net, 3.1.1"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.1.0
+#addin nuget:?package=XiaoFeng.Net&version=3.1.1
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.1.0
+#tool nuget:?package=XiaoFeng.Net&version=3.1.1
 ```
 # 更新日志
+
+## 2023-08-22   v 3.1.1
+
+1.修复postman在ssl下,一直发送消息服务端不能收到的问题;
 
 ## 2023-08-22   v 3.1.0
 
