@@ -73,6 +73,8 @@ Cake
 
 2.SocketServer,SocketClient增加NetworkDelay网络延时属性;
 
+3.优化SocketServer中的AcceptTcpClient方法;
+
 ## 2023-08-29   v 3.1.2
 
 1.优化SocketClient,在websocket客户端未解包的Bug;
