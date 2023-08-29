@@ -30,42 +30,54 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.1.1
+$ dotnet add package XiaoFeng.Net --version 3.1.2
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.1.1
+PM> Install-Package XiaoFeng.Net --Version 3.1.2
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.1.1" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.2" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.1.1
+> paket add XiaoFeng.Net --version 3.1.2
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.1.1"
+> #r "nuget: XiaoFeng.Net, 3.1.2"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.1.1
+#addin nuget:?package=XiaoFeng.Net&version=3.1.2
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.1.1
+#tool nuget:?package=XiaoFeng.Net&version=3.1.2
 ```
 # 更新日志
+
+## 2023-08-29   v 3.1.2
+
+1.优化SocketClient,在websocket客户端未解包的Bug;
+
+2.优化SocketClient第一次连接只调用OnMessage事件未调用OnMessageByte事件的Bug;
+
+3.SocketClient增加LastMessageTime最后通讯时间,ConnectedTime连接时间;
+
+4.优化识别客户端是WebSocket还是Socket;
+
+5.SocketClient连接方法增加返回类型;
 
 ## 2023-08-22   v 3.1.1
 

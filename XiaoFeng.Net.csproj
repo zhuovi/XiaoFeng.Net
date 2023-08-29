@@ -23,7 +23,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
-		<PackageReleaseNotes>设置NetServer,NetClient过期,用SocketServer,SocketClient替代;SocketClient连接方法增加返回类型;</PackageReleaseNotes>
+		<PackageReleaseNotes>优化SocketClient,在websocket客户端未解包的Bug;优化SocketClient第一次连接只调用OnMessage事件未调用OnMessageByte事件的Bug;SocketClient增加LastMessageTime最后通讯时间,ConnectedTime连接时间;优化识别客户端是WebSocket还是Socket;SocketClient连接方法增加返回类型;</PackageReleaseNotes>
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>

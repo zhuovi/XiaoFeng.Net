@@ -946,6 +946,7 @@ namespace XiaoFeng.Net
                     this.OnStart?.Invoke(this, EventArgs.Empty);
                     await this.CheckClientAuthenticatedAsync().ConfigureAwait(false);
                     this.OnMessage?.Invoke(this, ReceiveMessage, EventArgs.Empty);
+                    this.OnMessageByte?.Invoke(this, bytes, EventArgs.Empty);
                 }
             }
             else
@@ -1008,6 +1009,7 @@ namespace XiaoFeng.Net
                 {
                     var packet = new WebSocketPacket(this);
                     bytes = packet.UnPacket(bytes);
+                    ReceiveMessage = bytes.GetString(this.Encoding);
                     if (packet.OpCode == OpCode.Close) break;
                     if (packet.OpCode == OpCode.Pong)
                     {
