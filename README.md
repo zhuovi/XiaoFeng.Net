@@ -30,42 +30,48 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.1.2
+$ dotnet add package XiaoFeng.Net --version 3.1.3
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.1.2
+PM> Install-Package XiaoFeng.Net --Version 3.1.3
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.1.2" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.3" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.1.2
+> paket add XiaoFeng.Net --version 3.1.3
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.1.2"
+> #r "nuget: XiaoFeng.Net, 3.1.3"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.1.2
+#addin nuget:?package=XiaoFeng.Net&version=3.1.3
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.1.2
+#tool nuget:?package=XiaoFeng.Net&version=3.1.3
 ```
 # 更新日志
+
+## 2023-08-30   v 3.1.3
+
+1.优化网络延时时服务端接收websocket客户端时偶尔拒绝连接的bug
+
+2.SocketServer,SocketClient增加NetworkDelay网络延时属性;
 
 ## 2023-08-29   v 3.1.2
 

@@ -8,7 +8,7 @@
 		<Copyright>CopyRight © 2008-2024 魔法精灵(www.eelf.cn) QQ:7092734 Email:jacky@eelf.cn</Copyright>
 		<Company>魔法精灵</Company>
 		<VersionPrefix>3.1</VersionPrefix>
-		<VersionSuffix>2</VersionSuffix>
+		<VersionSuffix>3</VersionSuffix>
 		<Version>$(VersionPrefix).$(VersionSuffix)</Version>
 		<FileVersion>$(Version)</FileVersion>
 		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
@@ -23,7 +23,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
-		<PackageReleaseNotes>优化SocketClient,在websocket客户端未解包的Bug;优化SocketClient第一次连接只调用OnMessage事件未调用OnMessageByte事件的Bug;SocketClient增加LastMessageTime最后通讯时间,ConnectedTime连接时间;优化识别客户端是WebSocket还是Socket;SocketClient连接方法增加返回类型;</PackageReleaseNotes>
+		<PackageReleaseNotes>优化网络延时时服务端接收websocket客户端时偶尔拒绝连接的bug;SocketServer,SocketClient增加NetworkDelay网络延时属性;</PackageReleaseNotes>
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>
