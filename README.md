@@ -67,6 +67,13 @@ Cake
 ```
 # 更新日志
 
+## v 3.1.4
+
+1.优化SocketClient中NetworkDelay最小值及最大值的判断;
+
+2.优化SocketClient中连接host为IP的bug;
+
+
 ## 2023-08-30   v 3.1.3
 
 1.优化网络延时时服务端接收websocket客户端时偶尔拒绝连接的bug
