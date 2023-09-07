@@ -23,7 +23,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
-		<PackageReleaseNotes>优化SocketClient中NetworkDelay最小值及最大值的判断;优化SocketClient中连接host为IP的bug;</PackageReleaseNotes>
+		<PackageReleaseNotes>优化SocketClient中NetworkDelay最小值及最大值的判断;优化SocketClient中连接host为IP的bug;优化XiaoFeng.Net.WebSocketClient请求头;</PackageReleaseNotes>
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>

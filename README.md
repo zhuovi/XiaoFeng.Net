@@ -73,6 +73,8 @@ Cake
 
 2.优化SocketClient中连接host为IP的bug;
 
+3.优化XiaoFeng.Net.WebSocketClient请求头;
+
 
 ## 2023-08-30   v 3.1.3
 
