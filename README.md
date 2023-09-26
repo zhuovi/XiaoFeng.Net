@@ -30,40 +30,40 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.1.3
+$ dotnet add package XiaoFeng.Net --version 3.1.4
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.1.3
+PM> Install-Package XiaoFeng.Net --Version 3.1.4
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.1.3" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.4" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.1.3
+> paket add XiaoFeng.Net --version 3.1.4
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.1.3"
+> #r "nuget: XiaoFeng.Net, 3.1.4"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.1.3
+#addin nuget:?package=XiaoFeng.Net&version=3.1.4
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.1.3
+#tool nuget:?package=XiaoFeng.Net&version=3.1.4
 ```
 # 更新日志
 
@@ -74,6 +74,8 @@ Cake
 2.优化SocketClient中连接host为IP的bug;
 
 3.优化XiaoFeng.Net.WebSocketClient请求头;
+
+4.优化网络客户端;
 
 
 ## 2023-08-30   v 3.1.3
