@@ -30,44 +30,48 @@ XiaoFeng.Net generator with [XiaoFeng.Net](https://github.com/zhuovi/XiaoFeng.Ne
 .NET CLI
 
 ```
-$ dotnet add package XiaoFeng.Net --version 3.1.4
+$ dotnet add package XiaoFeng.Net --version 3.1.5
 ```
 
 Package Manager
 
 ```
-PM> Install-Package XiaoFeng.Net --Version 3.1.4
+PM> Install-Package XiaoFeng.Net --Version 3.1.5
 ```
 
 PackageReference
 
 ```
-<PackageReference Include="XiaoFeng.Net" Version="3.1.4" />
+<PackageReference Include="XiaoFeng.Net" Version="3.1.5" />
 ```
 Paket CLI
 
 ```
-> paket add XiaoFeng.Net --version 3.1.4
+> paket add XiaoFeng.Net --version 3.1.5
 ```
 
 Script & Interactive
 
 ```
-> #r "nuget: XiaoFeng.Net, 3.1.4"
+> #r "nuget: XiaoFeng.Net, 3.1.5"
 ```
 
 Cake
 
 ```
 // Install XiaoFeng.Net as a Cake Addin
-#addin nuget:?package=XiaoFeng.Net&version=3.1.4
+#addin nuget:?package=XiaoFeng.Net&version=3.1.5
 
 // Install XiaoFeng.Net as a Cake Tool
-#tool nuget:?package=XiaoFeng.Net&version=3.1.4
+#tool nuget:?package=XiaoFeng.Net&version=3.1.5
 ```
 # 更新日志
 
-## v 3.1.4
+## 2023-10-08   v3.1.5
+
+1.修复SocketClient连接DNS时的bug;
+
+## 2023-09-26   v 3.1.4
 
 1.优化SocketClient中NetworkDelay最小值及最大值的判断;
 
