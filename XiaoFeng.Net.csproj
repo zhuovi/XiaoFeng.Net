@@ -23,7 +23,11 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageIconUrl>http://nuget.fayelf.com/x.png</PackageIconUrl>
 		<PackageTags>XiaoFeng;FAYELF;Net;</PackageTags>
+<<<<<<< Updated upstream
 		<PackageReleaseNotes>修复SocketClient连接DNS时的bug;</PackageReleaseNotes>
+=======
+		<PackageReleaseNotes>修复SocketClient连接DNS时的bug;修复SocketClient在网络延迟大时,websocket判断不成功的问题;修复SocketClient发送MessageType.Binary数据时的bug;新增NetUri网络地址类;修改WebSocketClient连接偶尔出现的bug;</PackageReleaseNotes>
+>>>>>>> Stashed changes
 		<DelaySign>False</DelaySign>
 		<IsPackable>true</IsPackable>
 		<PackageProjectUrl>https://github.com/zhuovi/XiaoFeng.Net</PackageProjectUrl>
